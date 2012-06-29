@@ -37,7 +37,7 @@ Instead of compiling this application, you can get in on the Google Play Store :
 
 # Change log
 [0.2.1 Beta] - 30th June 2012 
-Added the RCON Console (not fully finished).
+Added the RCON Console (working but not fully finished).
 
 [0.2.0 Beta] - 29th June 2012 
 Rewriting of the most part of the Query Class.
