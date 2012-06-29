@@ -2,10 +2,13 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		0.1.1 Beta
- * @date		1st June 2012
+ * @version		0.2.0 Beta
+ * @date		29th June 2012
  * @licence		GPLv3
- * @thanks		Icons : woothemes.com - App icon : TheOriginalTwig
+ * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
+ * 				Sasuke78200 : Some help with the first query class (v0.1.x).
+ * 				Woothemes.com : In app icons (tabs and menu).
+ * 				TheOriginalTwig : App icon.
  */
 
 package com.rafaelk.sampapp;
@@ -32,7 +35,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
  
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String CREATE_SERVERS_TABLE = "CREATE TABLE " + TABLE_SERVERS + "(" + KEY_ID + " INTEGER PRIMARY KEY," + KEY_ALIAS + " TEXT," + KEY_IP + " TEXT," + KEY_PORT + " TEXT," + KEY_RCON + " TEXT" + ")";
+        String CREATE_SERVERS_TABLE = "CREATE TABLE " + TABLE_SERVERS + "("
+                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_ALIAS + " TEXT," + KEY_IP + " TEXT,"
+                + KEY_PORT + " TEXT," + KEY_RCON + " TEXT" + ")";
         db.execSQL(CREATE_SERVERS_TABLE);
     }
  
@@ -59,7 +64,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String[] servers = new String[5];
  
-        Cursor cursor = db.query(TABLE_SERVERS, new String[] { KEY_ID, KEY_ALIAS, KEY_IP, KEY_PORT, KEY_RCON }, KEY_ID + "=?", new String[] { String.valueOf(id) }, null, null, null, null);
+        Cursor cursor = db.query(TABLE_SERVERS, new String[] { KEY_ID,
+                KEY_ALIAS, KEY_IP, KEY_PORT, KEY_RCON }, KEY_ID + "=?",
+                new String[] { String.valueOf(id) }, null, null, null, null);
         if (cursor != null)
             cursor.moveToFirst();
         
@@ -97,12 +104,14 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         values.put(KEY_PORT, port);
         values.put(KEY_RCON, rcon);
  
-        return db.update(TABLE_SERVERS, values, KEY_ID + " = ?", new String[] { String.valueOf(serverid) });
+        return db.update(TABLE_SERVERS, values, KEY_ID + " = ?",
+                new String[] { String.valueOf(serverid) });
     }
  
     public void deleteServer(int serverid) {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_SERVERS, KEY_ID + " = ?", new String[] { String.valueOf(serverid) });
+        db.delete(TABLE_SERVERS, KEY_ID + " = ?",
+                new String[] { String.valueOf(serverid) });
         db.close();
     }
  

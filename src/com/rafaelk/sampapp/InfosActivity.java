@@ -2,10 +2,13 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		0.1.1 Beta
- * @date		1st June 2012
+ * @version		0.2.0 Beta
+ * @date		29th June 2012
  * @licence		GPLv3
- * @thanks		Icons : woothemes.com - App icon : TheOriginalTwig
+ * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
+ * 				Sasuke78200 : Some help with the first query class (v0.1.x).
+ * 				Woothemes.com : In app icons (tabs and menu).
+ * 				TheOriginalTwig : App icon.
  */
 
 package com.rafaelk.sampapp;
@@ -123,6 +126,8 @@ public class InfosActivity extends Activity {
 	        		textview.setText("Server offline.");
 	        		setContentView(textview);
 	        	}
+	        	
+	        	query.socketClose();
         	}
         	catch(Exception e) {
         		TextView textview = new TextView(this);

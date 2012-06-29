@@ -2,11 +2,13 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		0.1.1 Beta
- * @date		1st June 2012
+ * @version		0.2.0 Beta
+ * @date		29th June 2012
  * @licence		GPLv3
- * @thanks		Help with Query Class : Sasuke78200
- * 				Icons : woothemes.com - App icon : TheOriginalTwig
+ * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
+ * 				Sasuke78200 : Some help with the first query class (v0.1.x).
+ * 				Woothemes.com : In app icons (tabs and menu).
+ * 				TheOriginalTwig : App icon.
  */
 
 package com.rafaelk.sampapp;
@@ -14,6 +16,8 @@ package com.rafaelk.sampapp;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 
 public class SampQuery {
@@ -21,7 +25,6 @@ public class SampQuery {
 	private int serverport = 0;
 	private String serverrcon = null;
 	private boolean serverstatus = false;
-	private DatagramPacket packet = null;
 	private DatagramSocket socket = null;
 	
 	public SampQuery(String srvip, int srvport, String srvrcon) {
@@ -30,25 +33,31 @@ public class SampQuery {
 			this.serverport = srvport;
 			this.serverrcon = srvrcon;
 			
-			byte[] pkt = this.craftPacket('p');
-			
 			this.socket = new DatagramSocket();
-			this.packet = new DatagramPacket(pkt, 15);
-			this.packet.setAddress(this.serverip);
-			this.packet.setPort(this.serverport);
+			this.socket.setSoTimeout(1000);
 			
-			this.socket.send(this.packet);
-			this.socket.setSoTimeout(500);
-			
-			this.socket.receive(this.packet);
-			
-			socket.close();
-			
-			this.serverstatus = true;
+			if(this.sendPacket('p', "")) {
+				String result = new String(this.receiveData());
+				result = result.substring(10).trim();
+				
+				if(result.equals("p1234")) {
+					this.serverstatus = true;
+				}
+				else {
+					this.serverstatus = false;	
+				}
+			}
+			else {
+				this.serverstatus = false;				
+			}
 		}
 		catch(Exception e) {
 			this.serverstatus = false;
 		}
+	}
+	
+	public void socketClose() {
+		socket.close();
 	}
 	
 	public boolean isOnline() {
@@ -59,88 +68,82 @@ public class SampQuery {
 		String[] infos = new String[6];
 		
 		try {
-			int hostnamelength = 0;
-			int gamemodelength = 0;
-			int mapnamelength = 0;
-			byte[] pkt = this.craftPacket('i');
-			
-			this.socket = new DatagramSocket();
-			this.packet = new DatagramPacket(pkt, 128);
-			this.packet.setAddress(this.serverip);
-			this.packet.setPort(this.serverport);
-			
-			this.socket.send(this.packet);
-			this.socket.setSoTimeout(1000);
-			
-			this.socket.receive(this.packet);
-			
-			if(Integer.valueOf(pkt[11]) == 0)
-				infos[0] = "No";
-			else
-				infos[0] = "Yes";
-			
-			infos[1] = String.valueOf((this.unsignedByteToInt(pkt[13]) << 8) + this.unsignedByteToInt(pkt[12]));
-			infos[2] = String.valueOf((this.unsignedByteToInt(pkt[15]) << 8) + this.unsignedByteToInt(pkt[14]));
-			hostnamelength = (int) pkt[16] + (int) pkt[17] + (int) pkt[18] + (int) pkt[19];
-			gamemodelength = (int) pkt[20 + hostnamelength] + (int) pkt[21 + hostnamelength] + (int) pkt[22 + hostnamelength] + (int) pkt[23 + hostnamelength];
-			mapnamelength = (int) pkt[24 + hostnamelength + gamemodelength] + (int) pkt[25 + hostnamelength + gamemodelength] + (int) pkt[26 + hostnamelength + gamemodelength] + (int) pkt[27 + hostnamelength + gamemodelength];
-			
-			infos[3] = "";
-			for(int i = 0; i < hostnamelength; i++)
-				infos[3] += String.valueOf((char) pkt[20+i]);
-			
-			infos[4] = "";
-			for(int i = 0; i < gamemodelength; i++)
-				infos[4] += String.valueOf((char) pkt[24+hostnamelength+i]);
-			
-			infos[5] = "";
-			for(int i = 0; i < mapnamelength; i++)
-				infos[5] += String.valueOf((char) pkt[28+hostnamelength+gamemodelength+i]);
-			
-			socket.close();
+			if(this.sendPacket('i', "")) {
+				byte[] result = this.receiveData();
+		        ByteBuffer buff = ByteBuffer.wrap(result);
+		        buff.order(ByteOrder.LITTLE_ENDIAN);
+		        buff.position(11);
+		        
+		        /* Password */
+		        if(buff.get() == 0) 
+		        	infos[0] = "No";
+		        else
+		        	infos[0] = "Yes";
+		        
+		        /* Players */
+		        infos[1] = String.valueOf(buff.getShort());      
+		        
+		        /* Max Players */
+		        infos[2] = String.valueOf(buff.getShort());      
+		        
+		        /* Hostname */
+		        int hostnamelenght = buff.getInt();
+		        infos[3] = "";
+				for(int i = 0; i < hostnamelenght; i++)
+					infos[3] += (char) buff.get();
+		        
+		        /* Gamemode */
+				int gamemodelenght = buff.getInt();
+				infos[4] = "";
+				for(int i = 0; i < gamemodelenght; i++)
+					infos[4] += (char) buff.get();
+		        
+		        /* Map name */
+				int mapnamelenght = buff.getInt();
+				infos[5] = "";
+				for(int i = 0; i < mapnamelenght; i++)
+					infos[5] += (char) buff.get();
+				
+				return infos;	
+			}
+			else {
+				return null;
+			}		
 		}
 		catch(Exception e) {
-			this.serverstatus = false;
-			infos = null;
+			return null;
 		}
-			
-		return infos;
 	}
 	
 	public String[][] getRules() {
 		try {
-			int rulescount = 0;
-			int currentrulenamelength = 0;
-			byte[] pkt = this.craftPacket('r');
-			
-			this.socket = new DatagramSocket();
-			this.packet = new DatagramPacket(pkt, 256);
-			this.packet.setAddress(this.serverip);
-			this.packet.setPort(this.serverport);
-			
-			this.socket.send(this.packet);
-			this.socket.setSoTimeout(1000);
-			
-			this.socket.receive(this.packet);
-			
-			rulescount = (int) pkt[11] + (int) pkt[12];			
-			String[][] rules = new String[2][rulescount];
-			for(int i = 0; i < rulescount; i++) {
-				int rulenamelength = (int) pkt[13 + currentrulenamelength];
-				int rulevaluelength = pkt[14 + currentrulenamelength + rulenamelength];
+			if(this.sendPacket('r', "")) {
+				byte[] result = this.receiveData();
+		        ByteBuffer buff = ByteBuffer.wrap(result);
+		        buff.order(ByteOrder.LITTLE_ENDIAN);
+		        buff.position(11);
+		        
+		        int rulescount = buff.getShort();
+		        String[][] rules = new String[2][rulescount];
+				for(int i = 0; i < rulescount; i++) {
+					int rulenamelength = buff.get();
+					rules[0][i] = "";
+					
+					for(int x = 0; x < rulenamelength; x++)
+						rules[0][i] += (char) buff.get();
+					
+					int rulevaluelength = buff.get();
+					rules[1][i] = "";
+					
+					for(int x = 0; x < rulevaluelength; x++)
+						rules[1][i] += (char) buff.get();
+				}
 				
-				rules[0][i] = "";
-				for(int x = 0; x < rulenamelength; x++)
-					rules[0][i] += String.valueOf((char) pkt[14 + currentrulenamelength + x]);
-				
-				rules[1][i] = "";
-				for(int x = 0; x < rulevaluelength; x++)
-					rules[1][i] += String.valueOf((char) pkt[15 + currentrulenamelength + rulenamelength + x]);
-				
-				currentrulenamelength = currentrulenamelength + rulenamelength + rulevaluelength + 2;
+				return rules;
 			}
-			
-			return rules;
+			else {
+				return null;
+			}
 		}
 		catch(Exception e) {
 			return null;
@@ -149,97 +152,113 @@ public class SampQuery {
 	
 	public String[][] getPlayers() {
 		try {
-			int playercount = 0;
-			int currentplayerlength = 0;
-			byte[] pkt = this.craftPacket('d');
-			
-			this.socket = new DatagramSocket();
-			this.packet = new DatagramPacket(pkt, 3500);
-			this.packet.setAddress(this.serverip);
-			this.packet.setPort(this.serverport);
-			
-			this.socket.send(this.packet);
-			this.socket.setSoTimeout(1500);
-			
-			this.socket.receive(this.packet);
-			
-			playercount = (int) pkt[11] + (int) pkt[12];
-			String[][]players = new String[4][playercount];
-			for(int i = 0; i < playercount; i++) {
-				players[0][i] = String.valueOf((int) pkt[13 + currentplayerlength]);
-				int playernamelength = (int) pkt[14 + currentplayerlength];
-				players[1][i] = "";
-				for(int x = 0; x < playernamelength; x++) {
-					players[1][i] += String.valueOf((char) pkt[15 + currentplayerlength + x]);
-				}
-				
-				/* NOT WORKING, CURRENTLY WORKING ON */
-				players[2][i] = String.valueOf(this.unsignedByteToInt(pkt[16 + currentplayerlength]) + this.unsignedByteToInt(pkt[17 + currentplayerlength]) + this.unsignedByteToInt(pkt[18 + currentplayerlength]) + this.unsignedByteToInt(pkt[19 + currentplayerlength]));
-				players[3][i] = String.valueOf((int) pkt[20 + currentplayerlength] + (int) pkt[21 + currentplayerlength] + (int) pkt[22 + currentplayerlength] + (int) pkt[23 + currentplayerlength]);
-				
-				currentplayerlength += playernamelength + 10;
+			if(this.sendPacket('d', "")) {
+				byte[] result = this.receiveData();
+		        ByteBuffer buff = ByteBuffer.wrap(result);
+		        buff.order(ByteOrder.LITTLE_ENDIAN);
+		        buff.position(11);
+		        
+		       int playercount = buff.getShort();
+		       String[][] players = new String[4][playercount];
+		       
+		       for(int i = 0; i < playercount; i++) {
+		    	   /* ID */
+		    	   int playerid = (int) buff.get() & 0xff;
+		    	   players[0][i] =  String.valueOf(playerid);
+		    	   
+		    	   /* Player name */
+		    	   int playernamelenght = buff.get();
+		    	   players[1][i] = "";
+		    	   for(int x = 0; x < playernamelenght; x++)
+		    		   players[1][i] += (char) buff.get();
+		    	  
+		    	   /* Score */
+		    	   players[2][i] = String.valueOf(buff.getInt());
+		    	   
+		    	   /* Ping */
+		    	   players[3][i] = String.valueOf(buff.getInt());
+		    	   
+		       }
+		       
+		       return players;
 			}
-			
-			return players;
+			else {
+				return null;
+			}
 		}
 		catch(Exception e) {
 			return null;
 		}
 	}
 	
-	private byte[] craftPacket(char type) {
-		byte[] pkt = new byte[3500];
+	private boolean sendPacket (char type, String command) {
+		DatagramPacket pkt = null;
+		String pktdata = "";
 		byte[] IP = this.serverip.getAddress();
 		
-		pkt[0] = 'S';
-		pkt[1] = 'A';
-		pkt[2] = 'M';
-		pkt[3] = 'P';
-		
-		pkt[4] = IP[0];
-		pkt[5] = IP[1];
-		pkt[6] = IP[2];
-		pkt[7] = IP[3];
-		
-		pkt[8] = (byte) (this.serverport & 0xFF);
-		pkt[9] = (byte) ((this.serverport >> 8) & 0xFF);
-		
-		/* PING */
-		if(type == 'p') {
-			pkt[10] = 'p';
+		try {
+			pktdata = "SAMP";
+			for(int i = 0; i < 4; i++)
+				pktdata += (char) IP[i];
+			pktdata += (char) (this.serverport & 0xFF);
+			pktdata += (char) ((this.serverport >> 8) & 0xFF);
+			/* PING */
+			if(type == 'p') {
+				pktdata += "p";
+				
+				pktdata += "1";
+				pktdata += "2";
+				pktdata += "3";
+				pktdata += "4";
+			}
+			/* INFO */
+			else if(type == 'i') {
+				pktdata += "i";	
+			}
+			/* RULES */
+			else if(type == 'r') {
+				pktdata += "r";
+			}
+			/* PLAYERS */
+			else if(type == 'd') {
+				pktdata += "d";
+			}
+			/* RCON NOT FINISHED */
+			else if(type == 'x') {
+				pktdata += "x";
+				
+				pktdata += (char)(this.serverrcon.length() & 0xFF);
+				pktdata += (char)(this.serverrcon.length() >> 8 & 0xFF);
+				pktdata += this.serverrcon;
+				pktdata += (char)(command.length() & 0xFF);
+				pktdata += (char)(command.length() >> 8 & 0xFF);
+				pktdata += command;
+			}
+			else {
+				pktdata += "p";
+			}
 			
-			pkt[11] = '1';
-			pkt[12] = '2';
-			pkt[14] = '3';
-			pkt[15] = '4';
+			byte[] data = pktdata.getBytes("US-ASCII");
+			pkt = new DatagramPacket(data, data.length, this.serverip, this.serverport);
+			this.socket.send(pkt);
+				
+			return true;
 		}
-		/* INFO */
-		else if(type == 'i') {
-			pkt[10] = 'i';	
+		catch(Exception e) {
+			return false;
 		}
-		/* RULES */
-		else if(type == 'r') {
-			pkt[10] = 'r';
-		}
-		/* PLAYERS */
-		else if(type == 'd') {
-			pkt[10] = 'd';
-		}
-		/* RCON NOT FINISHED */
-		else if(type == 'x') {
-			pkt[10] = 'x';
-			
-			pkt[11] = (byte) (this.serverrcon.length() & 0xFF);
-			pkt[12] = (byte) ((this.serverrcon.length() >> 8) & 0xFF);
-		}
-		else {
-			pkt[10] = 'p';
-		}
-		
-		return pkt;
 	}
 	
-	private int unsignedByteToInt(byte b) {
-		return (int) b & 0xFF;
+	private byte[] receiveData() {
+		byte[] data = new byte[3072];
+		DatagramPacket getpacket = null;
+		
+		try {
+			getpacket = new DatagramPacket(data, data.length);
+			socket.receive(getpacket);
+		} 
+		catch (Exception e) { } 
+		
+		return getpacket.getData();
 	}
 }

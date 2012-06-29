@@ -2,10 +2,13 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		0.1.1 Beta
- * @date		1st June 2012
+ * @version		0.2.0 Beta
+ * @date		29th June 2012
  * @licence		GPLv3
- * @thanks		Icons : woothemes.com - App icon : TheOriginalTwig
+ * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
+ * 				Sasuke78200 : Some help with the first query class (v0.1.x).
+ * 				Woothemes.com : In app icons (tabs and menu).
+ * 				TheOriginalTwig : App icon.
  */
 
 package com.rafaelk.sampapp;
@@ -77,7 +80,7 @@ public class SampAppActivity extends TabActivity {
 	            return true;
 	 
 	        case R.id.menu_about:
-	            Toast.makeText(SampAppActivity.this, "SA-MP App V 0.1.1 beta\n\nThis application has been developped by Rafael 'R@f' Keramidas.\n\nThanks: Sasuke78200 (Help with query class), woothemes.com (In-app icons) and TheOriginalTwig (App icon).", Toast.LENGTH_LONG).show();
+	            Toast.makeText(SampAppActivity.this, "SA-MP App V 0.2.0 beta\n\nThis application has been developped by Rafael 'R@f' Keramidas.\n\nThanks: StatusRed (Inspiration of his query class), Sasuke78200 (Help with query class), woothemes.com (In-app icons) and TheOriginalTwig (App icon).", Toast.LENGTH_LONG).show();
 	            return true;
 	 
 	        case R.id.menu_add:

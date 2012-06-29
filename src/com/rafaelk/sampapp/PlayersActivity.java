@@ -2,10 +2,13 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		0.1.1 Beta
- * @date		1st June 2012
+ * @version		0.2.0 Beta
+ * @date		29th June 2012
  * @licence		GPLv3
- * @thanks		Icons : woothemes.com - App icon : TheOriginalTwig
+ * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
+ * 				Sasuke78200 : Some help with the first query class (v0.1.x).
+ * 				Woothemes.com : In app icons (tabs and menu).
+ * 				TheOriginalTwig : App icon.
  */
 
 package com.rafaelk.sampapp;
@@ -14,7 +17,12 @@ import android.app.ListActivity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,12 +52,14 @@ public class PlayersActivity extends ListActivity {
 	        		String[] infos = query.getInfos();
 	        		int playercount = Integer.valueOf(infos[1]);
 	        		
+	        		getListView().setAdapter(null);
+	        		
 	        		if(playercount == 0) {
 	        			Toast.makeText(this, "No players.", Toast.LENGTH_SHORT).show();
 	        		}
 	        		else if(playercount <= 100) {
 	        			try {	    	        		
-		        			String[][] players = query.getPlayers();
+		        			final String[][] players = query.getPlayers();
 		        			String[] idplayername = new String[playercount];
 		        			
 		        			for(int i = 0; i < playercount; i++) {
@@ -57,21 +67,38 @@ public class PlayersActivity extends ListActivity {
 		        			}
 		        			
 		        			setListAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, idplayername));
-		                	getListView().setTextFilterEnabled(true);
+		        			
+		        			ListView listView = getListView();
+		        			listView.setTextFilterEnabled(true);
+		        	 
+		        			listView.setOnItemClickListener(new OnItemClickListener() {
+		        				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		        				    Toast.makeText(getApplicationContext(), 
+		        				    		players[1][position] + 
+		        				    		"\nID: " + players[0][position] + 
+		        				    		"\nScore: " + players[2][position] + 
+		        				    		"\nPing: " + players[3][position], Toast.LENGTH_SHORT).show();
+		        				}
+		        			});
 	        			}
 	        			catch(Exception e) {
 	        				Toast.makeText(this, "Couldn't get the player list.", Toast.LENGTH_SHORT).show();
+	        				Log.d("Players list bug:", ""+e);
 	        			}
 	        		}
 	        		else {
 	        			Toast.makeText(this, "Too many players to get the list.", Toast.LENGTH_SHORT).show();
 	        		}
+	        		
 	        	}
 	        	else {
 	        		Toast.makeText(this, "Server offline.", Toast.LENGTH_SHORT).show();
 	        	}
+	        	
+	        	query.socketClose();
         	}
         	catch(Exception e) {
+        		//Toast.makeText(this, "Server not found. Please choose another from the list.", Toast.LENGTH_SHORT).show();
         	}
         }
         else {
