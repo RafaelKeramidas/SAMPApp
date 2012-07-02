@@ -2,8 +2,8 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		0.2.1 Beta
- * @date		30th June 2012
+ * @version		1.0.0
+ * @date		2th July 2012
  * @licence		GPLv3
  * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
  * 				Sasuke78200 : Some help with the first query class (v0.1.x).
@@ -76,11 +76,27 @@ public class SampAppActivity extends TabActivity {
         		return true;
  
 	        case R.id.menu_rcon:
-	            this.rconDialog();
+	        	SharedPreferences sp = this.getSharedPreferences(SampAppActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
+	        	final int serverid = sp.getInt("serverid", 1);
+	        	try {
+	        		DatabaseHandler db = new DatabaseHandler(this);
+	            	String[] server = db.getServer(serverid);
+					SampQuery query = new SampQuery(server[2], Integer.parseInt(server[3]), server[4]);
+					if(query.isValidRconPassword()) {
+						this.rconDialog();
+					}
+					else {
+						Toast.makeText(SampAppActivity.this, "Invalid password.", Toast.LENGTH_SHORT).show();	
+					}
+					query.socketClose();
+	        	}
+	        	catch (Exception e) {
+	        		Toast.makeText(SampAppActivity.this, "No server selected.", Toast.LENGTH_SHORT).show();	
+	        	}
 	        	return true;
 	 
 	        case R.id.menu_about:
-	            Toast.makeText(SampAppActivity.this, "SA-MP App V 0.2.0 beta\n\nThis application has been developped by Rafael 'R@f' Keramidas.\n\nThanks: StatusRed (Inspiration of his query class), Sasuke78200 (Help with query class), woothemes.com (In-app icons) and TheOriginalTwig (App icon).", Toast.LENGTH_LONG).show();
+	            Toast.makeText(SampAppActivity.this, "SA-MP App V 1.0.0\n\nThis application has been developped by Rafael 'R@f' Keramidas.\n\nThanks: StatusRed (Inspiration of his query class), Sasuke78200 (Help with query class), woothemes.com (In-app icons) and TheOriginalTwig (App icon).", Toast.LENGTH_LONG).show();
 	            return true;
 	 
 	        case R.id.menu_add:
@@ -106,50 +122,46 @@ public class SampAppActivity extends TabActivity {
     	try {
     		DatabaseHandler db = new DatabaseHandler(this);
         	final String[] server = db.getServer(serverid);
-        	if(!server[3].equals("")) {
-	        	LayoutInflater li = LayoutInflater.from(SampAppActivity.this);
-	    		View rconconsoleView = li.inflate(R.layout.rconconsole, null);
-	
-	    		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(SampAppActivity.this);
-	    		alertDialogBuilder.setView(rconconsoleView);
-	
-	    		final EditText rconcommand = (EditText) rconconsoleView.findViewById(R.id.editText1);
-	
-	    		alertDialogBuilder
-	    			.setTitle("RCON Console")
-	    			.setCancelable(false)
-	    			.setPositiveButton("Send",
-	    			new DialogInterface.OnClickListener() {
-	    				public void onClick(DialogInterface dialog,int id) {
-	    					try {
-	    						SampQuery query = new SampQuery(server[2], Integer.parseInt(server[3]), server[4]);
-	    						if(query.sendRconCommand(rconcommand.getText().toString())) {
-	    							Toast.makeText(SampAppActivity.this, "Command sent !", Toast.LENGTH_SHORT).show();
-	    						}
-	    						else {
-	    							Toast.makeText(SampAppActivity.this, "Couldn't send the command...", Toast.LENGTH_SHORT).show();
-	    						}
-	    					}
-	    					catch(Exception e) {
-	    						Toast.makeText(SampAppActivity.this, "Couldn't send the command...", Toast.LENGTH_SHORT).show();
-	    					}
-	    					
-	    					dialog.cancel();
-	    				}
-	    		  	})
-	    			.setNegativeButton("Cancel",
-	    			new DialogInterface.OnClickListener() {
-	    			    public void onClick(DialogInterface dialog,int id) {
-	    			    	dialog.cancel();
-	    			    }
-	    			});
-	
-	    		AlertDialog alertDialog = alertDialogBuilder.create();
-	    		alertDialog.show();
-        	}
-        	else {
-        		Toast.makeText(SampAppActivity.this, "RCON Password is empty.", Toast.LENGTH_SHORT).show();	
-        	}
+        	LayoutInflater li = LayoutInflater.from(SampAppActivity.this);
+    		View rconconsoleView = li.inflate(R.layout.rconconsole, null);
+
+    		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(SampAppActivity.this);
+    		alertDialogBuilder.setView(rconconsoleView);
+
+    		final EditText rconcommand = (EditText) rconconsoleView.findViewById(R.id.editText1);
+
+    		alertDialogBuilder
+    			.setTitle("RCON Console")
+    			.setCancelable(false)
+    			.setPositiveButton("Send",
+    			new DialogInterface.OnClickListener() {
+    				public void onClick(DialogInterface dialog,int id) {
+    					try {
+    						SampQuery query = new SampQuery(server[2], Integer.parseInt(server[3]), server[4]);
+    						if(query.sendRconCommand(rconcommand.getText().toString())) {
+    							Toast.makeText(SampAppActivity.this, "Command sent !", Toast.LENGTH_SHORT).show();
+    						}
+    						else {
+    							Toast.makeText(SampAppActivity.this, "Couldn't send the command...", Toast.LENGTH_SHORT).show();
+    						}
+    						query.socketClose();
+    					}
+    					catch(Exception e) {
+    						Toast.makeText(SampAppActivity.this, "Couldn't send the command...", Toast.LENGTH_SHORT).show();
+    					}
+    					
+    					dialog.cancel();
+    				}
+    		  	})
+    			.setNegativeButton("Cancel",
+    			new DialogInterface.OnClickListener() {
+    			    public void onClick(DialogInterface dialog,int id) {
+    			    	dialog.cancel();
+    			    }
+    			});
+
+    		AlertDialog alertDialog = alertDialogBuilder.create();
+    		alertDialog.show();
     	}
     	catch(Exception e) {
     		Toast.makeText(SampAppActivity.this, "No server selected.", Toast.LENGTH_SHORT).show();	

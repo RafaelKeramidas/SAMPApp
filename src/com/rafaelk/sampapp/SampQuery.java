@@ -2,8 +2,8 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		0.2.1 Beta
- * @date		30th June 2012
+ * @version		1.0.0
+ * @date		2th July 2012
  * @licence		GPLv3
  * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
  * 				Sasuke78200 : Some help with the first query class (v0.1.x).
@@ -195,6 +195,27 @@ public class SampQuery {
 		try {
 			if(this.sendPacket('x', command)) {
 				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		catch(Exception e) {
+			return false;
+		}
+	}
+	
+	public boolean isValidRconPassword() {
+		try {
+			if(this.sendPacket('x', "")) {
+				String result = new String(this.receiveData());
+				result = result.substring(13).trim();
+				if(result.equals("Invalid RCON password.")) {
+					return false;
+				}
+				else {
+					return true;
+				}
 			}
 			else {
 				return false;
