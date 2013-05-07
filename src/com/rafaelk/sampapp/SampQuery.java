@@ -2,7 +2,7 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		2.0.0
+ * @version		2.0.2
  * @date		7th May 2012
  * @licence		GPLv3
  * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
@@ -10,7 +10,7 @@
  * 				Woothemes.com : In app icons (tabs and menu).
  * 				TheOriginalTwig : App icon.
  */
-
+ 
 package com.rafaelk.sampapp;
 
 import java.net.DatagramPacket;
