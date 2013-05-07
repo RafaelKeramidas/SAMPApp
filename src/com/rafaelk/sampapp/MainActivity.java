@@ -2,8 +2,8 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		1.0.0
- * @date		2th July 2012
+ * @version		2.0.0
+ * @date		7th May 2012
  * @licence		GPLv3
  * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
  * 				Sasuke78200 : Some help with the first query class (v0.1.x).
@@ -13,6 +13,8 @@
 
 package com.rafaelk.sampapp;
 
+import android.os.AsyncTask;
+import android.os.Bundle;
 import android.app.AlertDialog;
 import android.app.TabActivity;
 import android.content.Context;
@@ -21,7 +23,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.Resources;
-import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -29,36 +31,48 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TabHost;
+import android.widget.TabHost.TabSpec;
 import android.widget.Toast;
 
-public class SampAppActivity extends TabActivity {
+@SuppressWarnings("deprecation")
+public class MainActivity extends TabActivity {
 	public static final String PREFS_PRIVATE = "SampAppPref";
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
 		
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
-        
-        Resources res = getResources();
-        TabHost tabHost = getTabHost();  
-        TabHost.TabSpec spec; 
-        Intent intent; 
+		Resources ressources = getResources(); 
+		TabHost tabHost = getTabHost(); 
+ 
+		// Android tab
+		Intent intentInfos = new Intent().setClass(this, InfosActivity.class);
+		TabSpec tabSpecInfos = tabHost
+			.newTabSpec("Infos")
+			.setIndicator("Infos", ressources.getDrawable(R.drawable.tab_infos))
+			.setContent(intentInfos);
+ 
+		Intent intentRules = new Intent().setClass(this, RulesActivity.class);
+		TabSpec tabSpecRules = tabHost
+			.newTabSpec("Rules")
+			.setIndicator("Rules", ressources.getDrawable(R.drawable.tab_rules))
+			.setContent(intentRules);
+ 
+		Intent intentPlayers = new Intent().setClass(this, PlayersActivity.class);
+		TabSpec tabSpecPlayers = tabHost
+			.newTabSpec("Players")
+			.setIndicator("Players", ressources.getDrawable(R.drawable.tab_players))
+			.setContent(intentPlayers);
+		
+		tabHost.addTab(tabSpecInfos);
+		tabHost.addTab(tabSpecRules);
+		tabHost.addTab(tabSpecPlayers);
+ 
+		tabHost.setCurrentTab(0);
+	}
 
-        intent = new Intent().setClass(this, InfosActivity.class);
-        spec = tabHost.newTabSpec("infos").setIndicator("Infos", res.getDrawable(R.drawable.tab_infos)).setContent(intent);
-        tabHost.addTab(spec);
-
-        intent = new Intent().setClass(this, RulesActivity.class);
-        spec = tabHost.newTabSpec("rules").setIndicator("Rules", res.getDrawable(R.drawable.tab_rules)).setContent(intent);
-        tabHost.addTab(spec);
-
-        intent = new Intent().setClass(this, PlayersActivity.class);
-        spec = tabHost.newTabSpec("players").setIndicator("Players", res.getDrawable(R.drawable.tab_players)).setContent(intent);
-        tabHost.addTab(spec);
-
-        tabHost.setCurrentTab(0);
-    }
-    @Override
+	@Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
     	MenuInflater menuInflater = getMenuInflater();
@@ -76,28 +90,24 @@ public class SampAppActivity extends TabActivity {
         		return true;
  
 	        case R.id.menu_rcon:
-	        	SharedPreferences sp = this.getSharedPreferences(SampAppActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
+	        	SharedPreferences sp = this.getSharedPreferences(MainActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
 	        	final int serverid = sp.getInt("serverid", 1);
 	        	try {
 	        		DatabaseHandler db = new DatabaseHandler(this);
 	            	String[] server = db.getServer(serverid);
-					SampQuery query = new SampQuery(server[2], Integer.parseInt(server[3]), server[4]);
-					if(query.isValidRconPassword()) {
-						this.rconDialog();
-					}
-					else {
-						Toast.makeText(SampAppActivity.this, "Invalid password.", Toast.LENGTH_SHORT).show();	
-					}
-					query.socketClose();
+	            	OpenRconConsole rconConsole = new OpenRconConsole(MainActivity.this, server[2], server[3], server[4]);
+	            	rconConsole.execute();
 	        	}
 	        	catch (Exception e) {
-	        		Toast.makeText(SampAppActivity.this, "No server selected.", Toast.LENGTH_SHORT).show();	
+	        		Log.d("SAMPAPP", e.toString());
+	        		Toast.makeText(MainActivity.this, "No server selected.", Toast.LENGTH_SHORT).show();	
 	        	}
 	        	return true;
 	 
 	        case R.id.menu_about:
-	            Toast.makeText(SampAppActivity.this, "SA-MP App V 1.0.0\n\nThis application has been developped by Rafael 'R@f' Keramidas.\n\nThanks: StatusRed (Inspiration of his query class), Sasuke78200 (Help with query class), woothemes.com (In-app icons) and TheOriginalTwig (App icon).", Toast.LENGTH_LONG).show();
-	            return true;
+	        	Intent intent = new Intent(MainActivity.this, AboutActivity.class);
+	        	MainActivity.this.startActivity(intent);
+	        	return true;
 	 
 	        case R.id.menu_add:
 	            this.addServerDialog();
@@ -116,16 +126,97 @@ public class SampAppActivity extends TabActivity {
         }
     }
     
+    private class OpenRconConsole extends AsyncTask<String, Void, Boolean> {
+    	private MainActivity activity = null;
+    	private String serverIP = null;
+    	private String serverPort = null;
+    	private String rconPassword = null;
+    	private String errorMsg = null;
+    	
+    	public OpenRconConsole(MainActivity activity, String serverIP, String serverPort, String rconPassword) {
+    		this.activity = activity;
+    		this.serverIP = serverIP;
+    		this.serverPort = serverPort;
+    		this.rconPassword = rconPassword;
+    	}
+
+		@Override
+		protected Boolean doInBackground(String... params) {
+			SampQuery query = new SampQuery(this.serverIP, Integer.parseInt(this.serverPort), this.rconPassword);
+			if(!query.isValidRconPassword()) {
+				this.errorMsg = "Invalid password.";
+			}
+			query.socketClose();
+			return true;
+		}
+		
+		@Override
+		protected void onPostExecute (Boolean result) {
+			if(errorMsg == null) {
+				rconDialog();
+			}
+			else {
+				Toast.makeText(this.activity, this.errorMsg, Toast.LENGTH_SHORT).show();	
+			}
+		}
+    	
+    }
+    
+    private class SendRconCommand extends AsyncTask<String, Void, Boolean> {
+    	private MainActivity activity = null;
+    	private String serverIP = null;
+    	private String serverPort = null;
+    	private String rconPassword = null;
+    	private String rconCommand = null;
+    	private DialogInterface dialog = null;
+    	private String toastMessage = null;
+    	
+    	public SendRconCommand(MainActivity activity, String serverIP, String serverPort, String rconPassword, String rconCommand, DialogInterface dialog) {
+    		this.activity = activity;
+    		this.serverIP = serverIP;
+    		this.serverPort = serverPort;
+    		this.rconPassword = rconPassword;
+    		this.rconCommand = rconCommand;
+    		this.dialog = dialog;
+    	}
+
+		@Override
+		protected Boolean doInBackground(String... params) {
+			try {
+				SampQuery query = new SampQuery(this.serverIP, Integer.parseInt(this.serverPort), this.rconPassword);
+				if(query.sendRconCommand(this.rconCommand)) {
+					toastMessage = "Command sent !";
+				}
+				else {
+					toastMessage = "Couldn't send the command...";
+				}
+				query.socketClose();
+			}
+			catch(Exception e) {
+				toastMessage = "Couldn't send the command...";
+			}
+			
+			return true;
+		}
+		
+		@Override
+		protected void onPostExecute (Boolean result) {
+			Toast.makeText(this.activity, this.toastMessage, Toast.LENGTH_SHORT).show();
+			dialog.cancel();
+		}
+    	
+    }
+    
     private void rconDialog() {
-    	SharedPreferences sp = this.getSharedPreferences(SampAppActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
+    	SharedPreferences sp = this.getSharedPreferences(MainActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
     	final int serverid = sp.getInt("serverid", 1);
     	try {
     		DatabaseHandler db = new DatabaseHandler(this);
         	final String[] server = db.getServer(serverid);
-        	LayoutInflater li = LayoutInflater.from(SampAppActivity.this);
+        	LayoutInflater li = LayoutInflater.from(MainActivity.this);
     		View rconconsoleView = li.inflate(R.layout.rconconsole, null);
 
-    		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(SampAppActivity.this);
+    		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
     		alertDialogBuilder.setView(rconconsoleView);
 
     		final EditText rconcommand = (EditText) rconconsoleView.findViewById(R.id.editText1);
@@ -136,21 +227,8 @@ public class SampAppActivity extends TabActivity {
     			.setPositiveButton("Send",
     			new DialogInterface.OnClickListener() {
     				public void onClick(DialogInterface dialog,int id) {
-    					try {
-    						SampQuery query = new SampQuery(server[2], Integer.parseInt(server[3]), server[4]);
-    						if(query.sendRconCommand(rconcommand.getText().toString())) {
-    							Toast.makeText(SampAppActivity.this, "Command sent !", Toast.LENGTH_SHORT).show();
-    						}
-    						else {
-    							Toast.makeText(SampAppActivity.this, "Couldn't send the command...", Toast.LENGTH_SHORT).show();
-    						}
-    						query.socketClose();
-    					}
-    					catch(Exception e) {
-    						Toast.makeText(SampAppActivity.this, "Couldn't send the command...", Toast.LENGTH_SHORT).show();
-    					}
-    					
-    					dialog.cancel();
+    					SendRconCommand rconCmd = new SendRconCommand(MainActivity.this, server[2], server[3], server[4], rconcommand.getText().toString(), dialog);
+    					rconCmd.execute();
     				}
     		  	})
     			.setNegativeButton("Cancel",
@@ -164,7 +242,7 @@ public class SampAppActivity extends TabActivity {
     		alertDialog.show();
     	}
     	catch(Exception e) {
-    		Toast.makeText(SampAppActivity.this, "No server selected.", Toast.LENGTH_SHORT).show();	
+    		Toast.makeText(MainActivity.this, "No server selected.", Toast.LENGTH_SHORT).show();	
     	}
     }
     
@@ -172,13 +250,13 @@ public class SampAppActivity extends TabActivity {
     	DatabaseHandler db = new DatabaseHandler(this);
     	if(db.getServerCount() != 0) {
 			final String[][] servers = db.getAllServers();
-			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(SampAppActivity.this);
+			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
 			alertDialogBuilder
 				.setTitle("Servers")
 		        .setItems(servers[1], new DialogInterface.OnClickListener() {
 		        	public void onClick(DialogInterface dialog, int whichButton) {
 		        		TabHost tabHost = getTabHost();
-		        		SharedPreferences prefsPrivate = SampAppActivity.this.getSharedPreferences(SampAppActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
+		        		SharedPreferences prefsPrivate = MainActivity.this.getSharedPreferences(MainActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
 						Editor prefsPrivateEditor = prefsPrivate.edit();
 						prefsPrivateEditor.putInt("serverid", Integer.parseInt(servers[0][whichButton]));
 						prefsPrivateEditor.commit();
@@ -191,15 +269,15 @@ public class SampAppActivity extends TabActivity {
 				alertDialog.show();
     	}
     	else {
-    		Toast.makeText(SampAppActivity.this, "No servers.", Toast.LENGTH_SHORT).show();
+    		Toast.makeText(MainActivity.this, "No servers.", Toast.LENGTH_SHORT).show();
 	    }
     }
     
     private void addServerDialog() {
-    	LayoutInflater li = LayoutInflater.from(SampAppActivity.this);
+    	LayoutInflater li = LayoutInflater.from(MainActivity.this);
 		View addeditdialogView = li.inflate(R.layout.addeditdialog, null);
 
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(SampAppActivity.this);
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
 		alertDialogBuilder.setView(addeditdialogView);
 
 		final EditText alias = (EditText) addeditdialogView.findViewById(R.id.editText1);
@@ -214,8 +292,8 @@ public class SampAppActivity extends TabActivity {
 			new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog,int id) {
 					TabHost tabHost = getTabHost();
-					DatabaseHandler db = new DatabaseHandler(SampAppActivity.this);
-			    	Toast.makeText(SampAppActivity.this, "Server " + alias.getText().toString() + " added !", Toast.LENGTH_SHORT).show();
+					DatabaseHandler db = new DatabaseHandler(MainActivity.this);
+			    	Toast.makeText(MainActivity.this, "Server " + alias.getText().toString() + " added !", Toast.LENGTH_SHORT).show();
 			    	db.addServer(alias.getText().toString(), ip.getText().toString(), port.getText().toString(), rcon.getText().toString());
 			    	tabHost.setCurrentTab(1);
 					tabHost.setCurrentTab(0);
@@ -234,15 +312,15 @@ public class SampAppActivity extends TabActivity {
     }
     
 	private void editServerDialog() {
-		SharedPreferences sp = this.getSharedPreferences(SampAppActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
+		SharedPreferences sp = this.getSharedPreferences(MainActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
     	final int serverid = sp.getInt("serverid", 1);
     	try {
     		DatabaseHandler db = new DatabaseHandler(this);
         	String[] server = db.getServer(serverid);
-			LayoutInflater li = LayoutInflater.from(SampAppActivity.this);
+			LayoutInflater li = LayoutInflater.from(MainActivity.this);
 			View addeditdialogView = li.inflate(R.layout.addeditdialog, null);
 	
-			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(SampAppActivity.this);
+			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
 			alertDialogBuilder.setView(addeditdialogView);
 	
 			final EditText alias = (EditText) addeditdialogView.findViewById(R.id.editText1);
@@ -262,8 +340,8 @@ public class SampAppActivity extends TabActivity {
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog,int id) {
 						TabHost tabHost = getTabHost();
-						DatabaseHandler db = new DatabaseHandler(SampAppActivity.this);
-						Toast.makeText(SampAppActivity.this, "Server " + alias.getText().toString() + " edited !", Toast.LENGTH_SHORT).show();
+						DatabaseHandler db = new DatabaseHandler(MainActivity.this);
+						Toast.makeText(MainActivity.this, "Server " + alias.getText().toString() + " edited !", Toast.LENGTH_SHORT).show();
 				    	db.updateServer(serverid, alias.getText().toString(), ip.getText().toString(), port.getText().toString(), rcon.getText().toString());
 				    	tabHost.setCurrentTab(1);
 						tabHost.setCurrentTab(0);
@@ -280,12 +358,12 @@ public class SampAppActivity extends TabActivity {
 			alertDialog.show();
     	}
     	catch(Exception e) {
-    		Toast.makeText(SampAppActivity.this, "No server to edit.", Toast.LENGTH_SHORT).show();	
+    		Toast.makeText(MainActivity.this, "No server to edit.", Toast.LENGTH_SHORT).show();	
     	}
 	}
 	
 	private void deleteServerDialog() {
-		final DatabaseHandler db = new DatabaseHandler(SampAppActivity.this);
+		final DatabaseHandler db = new DatabaseHandler(MainActivity.this);
 		
 		if(db.getServerCount() != 0) {
 			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
@@ -297,10 +375,10 @@ public class SampAppActivity extends TabActivity {
 				.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog,int id) {
 						TabHost tabHost = getTabHost();
-						SharedPreferences sp = SampAppActivity.this.getSharedPreferences(SampAppActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
+						SharedPreferences sp = MainActivity.this.getSharedPreferences(MainActivity.PREFS_PRIVATE, Context.MODE_PRIVATE);
 				    	int serverid = sp.getInt("serverid", 1);
 				    	db.deleteServer(serverid);
-						Toast.makeText(SampAppActivity.this, "Server deleted !", Toast.LENGTH_SHORT).show();
+						Toast.makeText(MainActivity.this, "Server deleted !", Toast.LENGTH_SHORT).show();
 				    	tabHost.setCurrentTab(1);
 						tabHost.setCurrentTab(0);
 					}
@@ -315,7 +393,8 @@ public class SampAppActivity extends TabActivity {
 				alertDialog.show();
 		}
 		else {
-			Toast.makeText(SampAppActivity.this, "Add some server first before trying to delete them...", Toast.LENGTH_SHORT).show();
+			Toast.makeText(MainActivity.this, "Add some server first before trying to delete them...", Toast.LENGTH_SHORT).show();
 		}
 	}
+
 }

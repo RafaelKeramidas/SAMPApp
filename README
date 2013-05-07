@@ -3,7 +3,7 @@ SA-MP App - Query and send RCON commands to your servers
 # About 
 SA-MP App is a free Android 2.1+ application to query San Andreas Multiplayer Servers and send RCON commands to them.
 
-- Actual version : 1.0.0 
+- Actual version : 2.0.2 
 - Project website : http://rafael.keramid.as/sampapp/
 
 @ Author
@@ -40,6 +40,17 @@ This project is released under GPLv3. Read the GPLv3.txt for more information.
 Instead of compiling this application, you can get in on the Google Play Store : http://roflc.at/6S
 
 # Change log
+[2.0.2] - 7th May 2013
+Fixed RCON console bugs.
+
+[2.0.1] - 7th May 2013
+Fixed an ad banner problem.
+
+[2.0.0] - 6th May 2013
+new GUI.
+Added threads to avoid application freezes.
+Added an ad banner.
+
 [1.0.0] - 2nd July 2012
 Finished the RCON Console (password check added).
 Changed the player details pop-up(dialog now).
