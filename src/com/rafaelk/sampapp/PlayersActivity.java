@@ -2,8 +2,8 @@
  * SA-MP App - Query and RCON Application
  * 
  * @author 		Rafael 'R@f' Keramidas <rafael@keramid.as>
- * @version		2.0.2
- * @date		7th May 2012
+ * @version		2.0.5
+ * @date		8th May 2012
  * @licence		GPLv3
  * @thanks		StatusRed : Took example of this query class code for the v0.2.0.
  * 				Sasuke78200 : Some help with the first query class (v0.1.x).
@@ -129,19 +129,25 @@ public class PlayersActivity extends Activity {
 	    	progressBar.setVisibility(View.INVISIBLE);
 	    	
 	    	if(errorMsg == null) {
-	    		ArrayAdapter<String> playersInList = new ArrayAdapter<String>(this.activity, android.R.layout.simple_list_item_1);
-	    		playerList.setAdapter(playersInList);
-	    		
-	    		for(int i = 0; i < playerCount; i++) {
-    				idPlayerName[i] = players[1][i] + " (" + players[0][i] + ")";
-    				playersInList.add(idPlayerName[i]);		
-    			}
-	    		
-	    		playerList.setOnItemClickListener(new OnItemClickListener() {
-    				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-    					showPlayerDialog(players[0][position], players[1][position], players[2][position], players[3][position], isRconAdmin);
-    				}
-    			});
+	    		try {
+		    		ArrayAdapter<String> playersInList = new ArrayAdapter<String>(this.activity, android.R.layout.simple_list_item_1);
+		    		playerList.setAdapter(playersInList);
+		    		
+		    		for(int i = 0; i < playerCount; i++) {
+	    				idPlayerName[i] = players[1][i] + " (" + players[0][i] + ")";
+	    				playersInList.add(idPlayerName[i]);		
+	    			}
+		    		
+		    		playerList.setOnItemClickListener(new OnItemClickListener() {
+	    				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+	    					showPlayerDialog(players[0][position], players[1][position], players[2][position], players[3][position], isRconAdmin);
+	    				}
+	    			});
+	    		}
+	    		catch(Exception e) {
+	    			errorMessage.setText("An unexpected error has occurred !");
+		    		errorMessage.setVisibility(View.VISIBLE);
+	    		}
 	    	}
 	    	else {
 	    		errorMessage.setText(errorMsg);

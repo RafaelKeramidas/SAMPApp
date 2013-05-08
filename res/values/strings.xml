@@ -18,7 +18,7 @@
     <string name="title_activity_credits">Credits</string>
     <string name="title_activity_about">About</string>
     <string name="developpedby">Developped by Rafael \'R@f\' Keramidas</string>
-    <string name="version">Version 2.0.2</string>
-    <string name="thanksto">Thanks to : StatusRed (Inspiration of his query class), Sasuke78200 (Help with query class), woothemes.com (In-app icons), TheOriginalTwig (App icon), Jantsu92 (Michael picture on this page).</string>
+    <string name="version">Version 2.0.5</string>
+    <string name="thanksto">Thanks to : StatusRed (Inspiration of his query class), Sasuke78200 (Help with query class), woothemes.com (In-app icons), TheOriginalTwig (App icon).</string>
 
 </resources>

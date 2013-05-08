@@ -40,6 +40,9 @@ This project is released under GPLv3. Read the GPLv3.txt for more information.
 Instead of compiling this application, you can get in on the Google Play Store : http://roflc.at/6S
 
 # Change log
+[2.0.5] - 8th May 2013
+Fixed application crash on the players tab.
+
 [2.0.2] - 7th May 2013
 Fixed RCON console bugs.
 
