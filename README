@@ -9,9 +9,6 @@ SA-MP App is a free Android 2.1+ application to query San Andreas Multiplayer Se
 @ Author
 This project was developped by Rafael 'R@f' Keramidas <rafael@keramid.as>.
 
-@ Donations 
-I spend some of my free time on the development of this application and I don't earn any money by doing this (free on the market, no ads and free source code !). If you like this app and want to support me (for further updates), you can donate something by clicking the donation button on my website (http://rafael.keramid.as/sampapp).
-
 @ Thanks
 StatusRed : Took example of this query class code for the v0.2.0.
 Sasuke78200 : Some help with the first query class (v0.1.x).
