@@ -260,7 +260,7 @@ public class SampQuery {
 			else if(type == 'd') {
 				pktdata += "d";
 			}
-			/* RCON NOT FINISHED */
+			/* RCON */
 			else if(type == 'x') {
 				pktdata += "x";
 				
